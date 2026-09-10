@@ -29,6 +29,23 @@ jobs:
             sed -i 's#android:roundIcon="[^"]*"#android:roundIcon="@drawable/drc_shot_tracker"#' "$MANIFEST"
           fi
 
+      - name: Set fresh Android package and version
+        run: |
+          KTS="BetterGolfAndroid/app/build.gradle.kts"
+          GROOVY="BetterGolfAndroid/app/build.gradle"
+          if [ -f "$KTS" ]; then
+            sed -i 's/applicationId = "[^"]*"/applicationId = "com.drc.shottracker.build19"/' "$KTS"
+            sed -i 's/versionCode = [0-9][0-9]*/versionCode = 19/' "$KTS"
+            sed -i 's/versionName = "[^"]*"/versionName = "1.0.19"/' "$KTS"
+          elif [ -f "$GROOVY" ]; then
+            sed -i "s/applicationId ['\"][^'\"]*['\"]/applicationId 'com.drc.shottracker.build19'/" "$GROOVY"
+            sed -i 's/versionCode [0-9][0-9]*/versionCode 19/' "$GROOVY"
+            sed -i "s/versionName ['\"][^'\"]*['\"]/versionName '1.0.19'/" "$GROOVY"
+          else
+            echo "No app Gradle file found"
+            exit 1
+          fi
+
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -45,11 +62,11 @@ jobs:
         run: gradle --no-daemon assembleDebug
 
       - name: Rename APK
-        run: cp BetterGolfAndroid/app/build/outputs/apk/debug/app-debug.apk DRC-SHOT-TRACKER.apk
+        run: cp BetterGolfAndroid/app/build/outputs/apk/debug/app-debug.apk DRC-SHOT-TRACKER-BUILD-19.apk
 
       - name: Upload Shot Tracker APK
         uses: actions/upload-artifact@v4
         with:
-          name: DRC-SHOT-TRACKER
-          path: DRC-SHOT-TRACKER.apk
+          name: DRC-SHOT-TRACKER-BUILD-19
+          path: DRC-SHOT-TRACKER-BUILD-19.apk
           if-no-files-found: error
