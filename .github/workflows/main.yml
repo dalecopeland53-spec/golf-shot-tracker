@@ -1,4 +1,4 @@
-name: Build DRC Golf Tracker Elite APK
+name: Build DRC Shot Tracker APK
 
 on:
   push:
@@ -10,38 +10,40 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Get Golf Tracker project
+      - name: Get Shot Tracker project
         uses: actions/checkout@v4
 
       - name: Unzip Android shell
         run: unzip -o BetterGolfAndroidProject.zip
 
-      - name: Create DRC Golf Tracker Elite branding
+      - name: Install approved Shot Tracker app and branding
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y imagemagick fonts-dejavu-core
           mkdir -p BetterGolfAndroid/app/src/main/assets
           cp tracker/index.html BetterGolfAndroid/app/src/main/assets/index.html
-          sed -i 's/DRC Shot Tracker/DRC Golf Tracker Elite/g' BetterGolfAndroid/app/src/main/assets/index.html
 
-          # Build the new Golf Tracker Elite logo from the approved metallic DRC artwork.
+          # Build a clean silver/blue Shot Tracker badge from the approved DRC artwork.
           convert assets/download.jpeg \
-            -auto-orient -resize '1024x1024^' -gravity center -extent 1024x1024 \
-            -fill '#f4f5f5' -draw 'rectangle 70,700 954,960' \
+            -auto-orient -resize '1200x1200^' -gravity center -extent 1200x1200 \
+            -gravity center -crop 920x920+0+0 +repage \
+            -bordercolor '#eef3f7' -border 70 \
+            -resize 1024x1024 \
+            -fill '#f4f7fa' -draw 'rectangle 90,760 934,965' \
             -gravity south -font DejaVu-Sans-Bold -fill '#075da8' \
             -stroke '#033f75' -strokewidth 1 \
-            -pointsize 72 -annotate +0+135 'GOLF TRACKER' \
-            -pointsize 54 -annotate +0+55 'ELITE' \
+            -pointsize 76 -annotate +0+110 'SHOT TRACKER' \
+            -pointsize 28 -annotate +0+48 'MEASURE  ·  IMPROVE  ·  PLAY BETTER' \
             -quality 94 BetterGolfAndroid/app/src/main/assets/drc-logo.jpg
 
           mkdir -p BetterGolfAndroid/app/src/main/res/drawable-nodpi
-          cp BetterGolfAndroid/app/src/main/assets/drc-logo.jpg BetterGolfAndroid/app/src/main/res/drawable-nodpi/drc_golf_tracker_elite.jpg
+          cp BetterGolfAndroid/app/src/main/assets/drc-logo.jpg BetterGolfAndroid/app/src/main/res/drawable-nodpi/drc_shot_tracker.jpg
 
           MANIFEST="BetterGolfAndroid/app/src/main/AndroidManifest.xml"
-          sed -i 's#android:label="[^"]*"#android:label="DRC Golf Tracker Elite"#' "$MANIFEST"
-          sed -i 's#android:icon="[^"]*"#android:icon="@drawable/drc_golf_tracker_elite"#' "$MANIFEST"
+          sed -i 's#android:label="[^"]*"#android:label="DRC Shot Tracker"#' "$MANIFEST"
+          sed -i 's#android:icon="[^"]*"#android:icon="@drawable/drc_shot_tracker"#' "$MANIFEST"
           if grep -q 'android:roundIcon=' "$MANIFEST"; then
-            sed -i 's#android:roundIcon="[^"]*"#android:roundIcon="@drawable/drc_golf_tracker_elite"#' "$MANIFEST"
+            sed -i 's#android:roundIcon="[^"]*"#android:roundIcon="@drawable/drc_shot_tracker"#' "$MANIFEST"
           fi
 
       - name: Set fresh Android package and version
@@ -49,13 +51,13 @@ jobs:
           KTS="BetterGolfAndroid/app/build.gradle.kts"
           GROOVY="BetterGolfAndroid/app/build.gradle"
           if [ -f "$KTS" ]; then
-            sed -i 's/applicationId = "[^"]*"/applicationId = "com.drc.golftracker.elite.build24"/' "$KTS"
-            sed -i 's/versionCode = [0-9][0-9]*/versionCode = 24/' "$KTS"
-            sed -i 's/versionName = "[^"]*"/versionName = "1.0.24"/' "$KTS"
+            sed -i 's/applicationId = "[^"]*"/applicationId = "com.drc.shottracker.build25"/' "$KTS"
+            sed -i 's/versionCode = [0-9][0-9]*/versionCode = 25/' "$KTS"
+            sed -i 's/versionName = "[^"]*"/versionName = "1.0.25"/' "$KTS"
           elif [ -f "$GROOVY" ]; then
-            sed -i "s/applicationId ['\"][^'\"]*['\"]/applicationId 'com.drc.golftracker.elite.build24'/" "$GROOVY"
-            sed -i 's/versionCode [0-9][0-9]*/versionCode 24/' "$GROOVY"
-            sed -i "s/versionName ['\"][^'\"]*['\"]/versionName '1.0.24'/" "$GROOVY"
+            sed -i "s/applicationId ['\"][^'\"]*['\"]/applicationId 'com.drc.shottracker.build25'/" "$GROOVY"
+            sed -i 's/versionCode [0-9][0-9]*/versionCode 25/' "$GROOVY"
+            sed -i "s/versionName ['\"][^'\"]*['\"]/versionName '1.0.25'/" "$GROOVY"
           else
             echo "No app Gradle file found"
             exit 1
@@ -72,16 +74,16 @@ jobs:
         with:
           gradle-version: '8.13'
 
-      - name: Build Golf Tracker Elite APK
+      - name: Build Shot Tracker APK
         working-directory: BetterGolfAndroid
         run: gradle --no-daemon assembleDebug
 
       - name: Rename APK
-        run: cp BetterGolfAndroid/app/build/outputs/apk/debug/app-debug.apk DRC-GOLF-TRACKER-ELITE-BUILD-24.apk
+        run: cp BetterGolfAndroid/app/build/outputs/apk/debug/app-debug.apk DRC-SHOT-TRACKER-BUILD-25.apk
 
-      - name: Upload Golf Tracker Elite APK
+      - name: Upload Shot Tracker APK
         uses: actions/upload-artifact@v4
         with:
-          name: DRC-GOLF-TRACKER-ELITE-BUILD-24
-          path: DRC-GOLF-TRACKER-ELITE-BUILD-24.apk
+          name: DRC-SHOT-TRACKER-BUILD-25
+          path: DRC-SHOT-TRACKER-BUILD-25.apk
           if-no-files-found: error
