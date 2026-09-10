@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Pro Golf Shot Tracker // Standalone Mobile</title>
+<style>
+:root {
+--bg-dark: #090d16;
+--bg-card: #151f32;
+--accent-green: #10b981;
+--accent-blue: #3b82f6;
+--accent-red: #ef4444;
+--text-light: #f8fafc;
+--text-gray: #94a3b8;
+--border: #27374d;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg-dark); color: var(--text-light); overflow: hidden; height: 100vh; height: 100dvh; display: flex; flex-direction: column; }
+.app-container { display: flex; flex-direction: column; height: 100%; width: 100%; }
+.display-section { flex: 1.1; display: flex; flex-direction: column; background: #020617; position: relative; min-height: 0; }
+.metrics-overlay { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 12px 10px; background: rgba(21, 31, 50, 0.9); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); z-index: 10; }
+.metric-card { text-align: center; padding: 8px 2px; background: rgba(9, 13, 22, 0.6); border-radius: 6px; border: 1px solid rgba(255,255,255,0.05); }
+.metric-card label { display: block; font-size: 10px; text-transform: uppercase; color: var(--text-gray); font-weight: 700; letter-spacing: 0.5px; }
+.metric-value { font-size: 16px; font-weight: 800; margin-top: 3px; color: var(--text-light); }
+.metric-value.highlight { color: var(--accent-green); }
+.canvas-container { flex: 1; position: relative; width: 100%; height: 100%; min-height: 0; }
+canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; }
+.control-section { flex: 0.9; background: var(--bg-card); border-top: 1px solid var(--border); padding: 15px 20px; padding-bottom: calc(15px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; justify-content: space-around; min-height: 0; overflow-y: auto; }
+.slider-group { display: flex; flex-direction: column; margin-bottom: 8px; }
+.slider-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.slider-header label { font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--text-gray); }
+.slider-value { font-size: 13px; font-weight: 700; color: var(--accent-blue); background: var(--bg-dark); padding: 2px 8px; border-radius: 4px; min-width: 80px; text-align: center; }
+input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; background: var(--bg-dark); height: 16px; border-radius: 8px; outline: none; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 32px; height: 32px; border-radius: 50%; background: var(--accent-green); cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+.action-btn { background: var(--accent-green); color: #000; font-size: 16px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; border: none; padding: 16px; border-radius: 8px; width: 100%; cursor: pointer; margin-top: 5px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2); }
+.action-btn:active { opacity: 0.8; transform: scale(0.99); }
+</style>
+</head>
+<body>
+<div class="app-container">
+<div class="display-section">
+<div class="metrics-overlay">
+<div class="metric-card"><label>Carry</label><div class="metric-value highlight" id="mCarry">-- yds</div></div>
+<div class="metric-card"><label>Total</label><div class="metric-value" id="mTotal">-- yds</div></div>
+<div class="metric-card"><label>Apex</label><div class="metric-value" id="mApex">-- ft</div></div>
+<div class="metric-card"><label>Offline</label><div class="metric-value" id="mOffline">-- yds</div></div>
+</div>
+<div class="canvas-container"><canvas id="trackerCanvas"></canvas></div>
+</div>
+<div class="control-section">
+<div class="slider-group"><div class="slider-header"><label>Ball Speed</label><span class="slider-value" id="vSpeed">165 mph</span></div><input type="range" id="ballSpeed" min="60" max="220" value="165"></div>
+<div class="slider-group"><div class="slider-header"><label>Launch Angle</label><span class="slider-value" id="vLaunch">12.0°</span></div><input type="range" id="launchAngle" min="5" max="40" step="0.5" value="12.0"></div>
+<div class="slider-group"><div class="slider-header"><label>Spin Rate</label><span class="slider-value" id="vSpin">2500 rpm</span></div><input type="range" id="spinRate" min="1500" max="11000" step="100" value="2500"></div>
+<div class="slider-group"><div class="slider-header"><label>Spin Axis (Curve)</label><span class="slider-value" id="vAxis">0.0°</span></div><input type="range" id="spinAxis" min="-25" max="25" step="0.5" value="0"></div>
+<button class="action-btn" id="fireBtn">Tracer Trigger</button>
+</div>
+</div>
+<script>
+class MobileShotTracker {
+constructor(canvasId) {
+this.canvas = document.getElementById(canvasId);
+this.ctx = this.canvas.getContext('2d');
+this.points = [];
+this.progress = 0;
+this.animFrame = null;
+this.setupCanvas();
+}
+setupCanvas() {
+const dpr = window.devicePixelRatio || 2;
+const rect = this.canvas.parentElement.getBoundingClientRect();
+this.canvas.width = Math.max(1, rect.width * dpr);
+this.canvas.height = Math.max(1, rect.height * dpr);
+this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+this.draw();
+}
+computeTrajectory(speed, launch, spin, axis) {
+const path = [];
+const g = 32.174;
+const v0 = speed * 1.46667;
+const theta = launch * (Math.PI / 180);
+let t = 0, dt = 0.04;
+let x = 0, y = 0, z = 0;
+let vx = v0 * Math.cos(theta);
+let vy = v0 * Math.sin(theta);
+let vz = 0;
+const liftCoef = (spin / 10000) * 0.22;
+const latCurveFactor = (axis * (Math.PI / 180)) * (spin / 3000);
+let maxApex = 0;
+while (y >= 0 && t < 12) {
+const vMag = Math.sqrt(vx * vx + vy * vy + vz * vz) || 1;
+const drag = 0.00045 * vMag * vMag;
+const lift = liftCoef * vMag;
+vx -= (drag * (vx / vMag)) * dt;
+vy -= (g + (drag * (vy / vMag)) - lift) * dt;
+vz += (latCurveFactor * (vx / vMag) * 3.5) * dt;
+x += vx * dt;
+y += vy * dt;
+z += vz * dt;
+if (y > maxApex) maxApex = y;
+path.push({ x: x / 3, y, z: z / 3 });
+t += dt;
+}
+return { path, metrics: { carry: (x / 3).toFixed(0), total: ((x / 3) * 1.07).toFixed(0), apex: maxApex.toFixed(0), offline: (z / 3).toFixed(1) } };
+}
+animate(data) {
+if (this.animFrame) cancelAnimationFrame(this.animFrame);
+this.points = data.path;
+this.progress = 0;
+const animateLoop = () => {
+this.progress = Math.min(1, this.progress + 0.025);
+this.draw();
+if (this.progress < 1) this.animFrame = requestAnimationFrame(animateLoop);
+};
+animateLoop();
+}
+draw() {
+const dpr = window.devicePixelRatio || 2;
+const w = this.canvas.width / dpr;
+const h = this.canvas.height / dpr;
+const ctx = this.ctx;
+ctx.clearRect(0, 0, w, h);
+ctx.fillStyle = '#020617';
+ctx.fillRect(0, 0, w, h);
+ctx.strokeStyle = '#1e293b';
+ctx.lineWidth = 1;
+for (let i = 1; i < 6; i++) {
+const yy = (h / 6) * i;
+ctx.beginPath(); ctx.moveTo(0, yy); ctx.lineTo(w, yy); ctx.stroke();
+}
+if (!this.points.length) {
+ctx.fillStyle = '#64748b';
+ctx.font = '600 14px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
+ctx.textAlign = 'center';
+ctx.fillText('Set values and tap TRACER TRIGGER', w / 2, h / 2);
+return;
+}
+const visible = Math.max(2, Math.floor(this.points.length * this.progress));
+const pts = this.points.slice(0, visible);
+const maxX = Math.max(...this.points.map(p => p.x), 1);
+const maxY = Math.max(...this.points.map(p => p.y), 1);
+const maxZ = Math.max(...this.points.map(p => Math.abs(p.z)), 1);
+const left = 26, right = 18, top = 18, bottom = 24;
+const sx = (w - left - right) / maxX;
+const sy = (h - top - bottom) / maxY;
+const centerY = h - bottom;
+ctx.lineWidth = 4;
+ctx.lineJoin = 'round';
+ctx.lineCap = 'round';
+ctx.shadowBlur = 12;
+ctx.shadowColor = '#10b981';
+ctx.strokeStyle = '#10b981';
+ctx.beginPath();
+pts.forEach((p, i) => {
+const px = left + p.x * sx;
+const curveShift = (p.z / maxZ) * Math.min(40, w * 0.1);
+const py = centerY - p.y * sy + curveShift;
+if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+});
+ctx.stroke();
+ctx.shadowBlur = 0;
+const last = pts[pts.length - 1];
+if (last) {
+const px = left + last.x * sx;
+const curveShift = (last.z / maxZ) * Math.min(40, w * 0.1);
+const py = centerY - last.y * sy + curveShift;
+ctx.fillStyle = '#f8fafc';
+ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI * 2); ctx.fill();
+}
+ctx.strokeStyle = '#334155';
+ctx.lineWidth = 2;
+ctx.beginPath(); ctx.moveTo(left, centerY); ctx.lineTo(w - right, centerY); ctx.stroke();
+}
+}
+const tracker = new MobileShotTracker('trackerCanvas');
+const speed = document.getElementById('ballSpeed');
+const launch = document.getElementById('launchAngle');
+const spin = document.getElementById('spinRate');
+const axis = document.getElementById('spinAxis');
+const vSpeed = document.getElementById('vSpeed');
+const vLaunch = document.getElementById('vLaunch');
+const vSpin = document.getElementById('vSpin');
+const vAxis = document.getElementById('vAxis');
+function syncLabels() {
+vSpeed.textContent = `${speed.value} mph`;
+vLaunch.textContent = `${Number(launch.value).toFixed(1)}°`;
+vSpin.textContent = `${spin.value} rpm`;
+vAxis.textContent = `${Number(axis.value).toFixed(1)}°`;
+}
+[speed, launch, spin, axis].forEach(el => el.addEventListener('input', syncLabels));
+document.getElementById('fireBtn').addEventListener('click', () => {
+const data = tracker.computeTrajectory(Number(speed.value), Number(launch.value), Number(spin.value), Number(axis.value));
+document.getElementById('mCarry').textContent = `${data.metrics.carry} yds`;
+document.getElementById('mTotal').textContent = `${data.metrics.total} yds`;
+document.getElementById('mApex').textContent = `${data.metrics.apex} ft`;
+document.getElementById('mOffline').textContent = `${data.metrics.offline} yds`;
+tracker.animate(data);
+});
+window.addEventListener('resize', () => tracker.setupCanvas());
+syncLabels();
+</script>
+</body>
+</html>
