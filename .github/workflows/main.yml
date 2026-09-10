@@ -13,13 +13,11 @@ jobs:
       - name: Get Shot Tracker project
         uses: actions/checkout@v4
 
-      - name: Unzip Android shell
+      - name: Unzip approved Android app
         run: unzip -o BetterGolfAndroidProject.zip
 
-      - name: Install proper Shot Tracker app and icon
+      - name: Keep approved home screen and install DRC launcher icon
         run: |
-          mkdir -p BetterGolfAndroid/app/src/main/assets
-          cp tracker/index.html BetterGolfAndroid/app/src/main/assets/index.html
           mkdir -p BetterGolfAndroid/app/src/main/res/drawable-nodpi
           base64 -d assets/drc-shot-tracker-master.base64 > BetterGolfAndroid/app/src/main/res/drawable-nodpi/drc_shot_tracker.jpg
           MANIFEST="BetterGolfAndroid/app/src/main/AndroidManifest.xml"
@@ -34,13 +32,13 @@ jobs:
           KTS="BetterGolfAndroid/app/build.gradle.kts"
           GROOVY="BetterGolfAndroid/app/build.gradle"
           if [ -f "$KTS" ]; then
-            sed -i 's/applicationId = "[^"]*"/applicationId = "com.drc.shottracker.build19"/' "$KTS"
-            sed -i 's/versionCode = [0-9][0-9]*/versionCode = 19/' "$KTS"
-            sed -i 's/versionName = "[^"]*"/versionName = "1.0.19"/' "$KTS"
+            sed -i 's/applicationId = "[^"]*"/applicationId = "com.drc.shottracker.build20"/' "$KTS"
+            sed -i 's/versionCode = [0-9][0-9]*/versionCode = 20/' "$KTS"
+            sed -i 's/versionName = "[^"]*"/versionName = "1.0.20"/' "$KTS"
           elif [ -f "$GROOVY" ]; then
-            sed -i "s/applicationId ['\"][^'\"]*['\"]/applicationId 'com.drc.shottracker.build19'/" "$GROOVY"
-            sed -i 's/versionCode [0-9][0-9]*/versionCode 19/' "$GROOVY"
-            sed -i "s/versionName ['\"][^'\"]*['\"]/versionName '1.0.19'/" "$GROOVY"
+            sed -i "s/applicationId ['\"][^'\"]*['\"]/applicationId 'com.drc.shottracker.build20'/" "$GROOVY"
+            sed -i 's/versionCode [0-9][0-9]*/versionCode 20/' "$GROOVY"
+            sed -i "s/versionName ['\"][^'\"]*['\"]/versionName '1.0.20'/" "$GROOVY"
           else
             echo "No app Gradle file found"
             exit 1
@@ -62,11 +60,11 @@ jobs:
         run: gradle --no-daemon assembleDebug
 
       - name: Rename APK
-        run: cp BetterGolfAndroid/app/build/outputs/apk/debug/app-debug.apk DRC-SHOT-TRACKER-BUILD-19.apk
+        run: cp BetterGolfAndroid/app/build/outputs/apk/debug/app-debug.apk DRC-SHOT-TRACKER-BUILD-20.apk
 
       - name: Upload Shot Tracker APK
         uses: actions/upload-artifact@v4
         with:
-          name: DRC-SHOT-TRACKER-BUILD-19
-          path: DRC-SHOT-TRACKER-BUILD-19.apk
+          name: DRC-SHOT-TRACKER-BUILD-20
+          path: DRC-SHOT-TRACKER-BUILD-20.apk
           if-no-files-found: error
