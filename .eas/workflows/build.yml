@@ -1,8 +1,0 @@
-name: Build Android
-
-jobs:
-  build_android:
-    name: Build Android
-    type: build
-    params:
-      platform: android
