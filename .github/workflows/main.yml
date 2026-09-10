@@ -13,14 +13,17 @@ jobs:
       - name: Get Shot Tracker project
         uses: actions/checkout@v4
 
-      - name: Unzip Shot Tracker Android project
+      - name: Unzip Android shell
         run: unzip -o BetterGolfAndroidProject.zip
 
-      - name: Apply approved DRC Shot Tracker logo
+      - name: Install proper Shot Tracker app and icon
         run: |
+          mkdir -p BetterGolfAndroid/app/src/main/assets
+          cp tracker/index.html BetterGolfAndroid/app/src/main/assets/index.html
           mkdir -p BetterGolfAndroid/app/src/main/res/drawable-nodpi
           base64 -d assets/drc-shot-tracker-master.base64 > BetterGolfAndroid/app/src/main/res/drawable-nodpi/drc_shot_tracker.jpg
           MANIFEST="BetterGolfAndroid/app/src/main/AndroidManifest.xml"
+          sed -i 's#android:label="[^"]*"#android:label="DRC Shot Tracker"#' "$MANIFEST"
           sed -i 's#android:icon="[^"]*"#android:icon="@drawable/drc_shot_tracker"#' "$MANIFEST"
           if grep -q 'android:roundIcon=' "$MANIFEST"; then
             sed -i 's#android:roundIcon="[^"]*"#android:roundIcon="@drawable/drc_shot_tracker"#' "$MANIFEST"
