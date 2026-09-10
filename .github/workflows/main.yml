@@ -16,6 +16,16 @@ jobs:
       - name: Unzip Android project
         run: unzip BetterGolfAndroidProject.zip
 
+      - name: Apply approved DRC logo
+        run: |
+          mkdir -p BetterGolfAndroid/app/src/main/res/drawable-nodpi
+          cp assets/drc-virtual-golf-elite.jpg BetterGolfAndroid/app/src/main/res/drawable-nodpi/drc_virtual_golf_elite.jpg
+          MANIFEST="BetterGolfAndroid/app/src/main/AndroidManifest.xml"
+          sed -i 's#android:icon="[^"]*"#android:icon="@drawable/drc_virtual_golf_elite"#' "$MANIFEST"
+          if grep -q 'android:roundIcon=' "$MANIFEST"; then
+            sed -i 's#android:roundIcon="[^"]*"#android:roundIcon="@drawable/drc_virtual_golf_elite"#' "$MANIFEST"
+          fi
+
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
@@ -24,10 +34,9 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
-        with:          
-        
-        
+        with:
           gradle-version: '8.13'
+
       - name: Build APK
         working-directory: BetterGolfAndroid
         run: gradle assembleDebug
