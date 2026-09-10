@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build DRC Shot Tracker APK
 
 on:
   push:
@@ -10,20 +10,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Get project
+      - name: Get Shot Tracker project
         uses: actions/checkout@v4
 
-      - name: Unzip Android project
-        run: unzip BetterGolfAndroidProject.zip
+      - name: Unzip Shot Tracker Android project
+        run: unzip -o BetterGolfAndroidProject.zip
 
-      - name: Apply approved DRC logo
+      - name: Apply approved DRC Shot Tracker logo
         run: |
           mkdir -p BetterGolfAndroid/app/src/main/res/drawable-nodpi
-          cp assets/drc-virtual-golf-elite.jpg BetterGolfAndroid/app/src/main/res/drawable-nodpi/drc_virtual_golf_elite.jpg
+          base64 -d assets/drc-shot-tracker-master.base64 > BetterGolfAndroid/app/src/main/res/drawable-nodpi/drc_shot_tracker.jpg
           MANIFEST="BetterGolfAndroid/app/src/main/AndroidManifest.xml"
-          sed -i 's#android:icon="[^"]*"#android:icon="@drawable/drc_virtual_golf_elite"#' "$MANIFEST"
+          sed -i 's#android:icon="[^"]*"#android:icon="@drawable/drc_shot_tracker"#' "$MANIFEST"
           if grep -q 'android:roundIcon=' "$MANIFEST"; then
-            sed -i 's#android:roundIcon="[^"]*"#android:roundIcon="@drawable/drc_virtual_golf_elite"#' "$MANIFEST"
+            sed -i 's#android:roundIcon="[^"]*"#android:roundIcon="@drawable/drc_shot_tracker"#' "$MANIFEST"
           fi
 
       - name: Set up Java
@@ -37,12 +37,16 @@ jobs:
         with:
           gradle-version: '8.13'
 
-      - name: Build APK
+      - name: Build Shot Tracker APK
         working-directory: BetterGolfAndroid
-        run: gradle assembleDebug
+        run: gradle --no-daemon assembleDebug
 
-      - name: Upload APK
+      - name: Rename APK
+        run: cp BetterGolfAndroid/app/build/outputs/apk/debug/app-debug.apk DRC-SHOT-TRACKER.apk
+
+      - name: Upload Shot Tracker APK
         uses: actions/upload-artifact@v4
         with:
-          name: Better-Golf-APK
-          path: BetterGolfAndroid/app/build/outputs/apk/debug/app-debug.apk
+          name: DRC-SHOT-TRACKER
+          path: DRC-SHOT-TRACKER.apk
+          if-no-files-found: error
