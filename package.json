@@ -3,8 +3,15 @@
   "version": "1.0.0",
   "private": true,
   "description": "DRC Elite Golf Shot Tracker Android wrapper",
+  "scripts": {
+    "cap:sync": "cap sync",
+    "cap:copy": "cap copy",
+    "cap:open:android": "cap open android",
+    "android:run": "cap run android"
+  },
   "dependencies": {
     "@capacitor/android": "^7.0.0",
+    "@capacitor/app": "^7.0.0",
     "@capacitor/core": "^7.0.0"
   },
   "devDependencies": {
