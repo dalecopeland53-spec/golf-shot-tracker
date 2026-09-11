@@ -3,6 +3,14 @@
   "appName": "DRC Elite Golf Shot Tracker",
   "webDir": "www",
   "server": {
-    "androidScheme": "https"
+    "androidScheme": "http",
+    "cleartext": true,
+    "allowNavigation": [
+      "10.0.2.2",
+      "localhost"
+    ]
+  },
+  "android": {
+    "allowMixedContent": true
   }
 }
