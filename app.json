@@ -1,8 +1,0 @@
-{
-  "appId": "com.dalecopeland.drcshottracker",
-  "appName": "DRC Elite Golf Shot Tracker",
-  "webDir": "www",
-  "server": {
-    "androidScheme": "https"
-  }
-}
